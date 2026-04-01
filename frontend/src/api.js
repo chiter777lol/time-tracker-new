@@ -1,42 +1,26 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: 'http://localhostoolkit';
+const api = axios.create({ baseURL: 'http://localhost:5001/api' });
 
-const authSlice = createSlice({
-  name: 'auth',
-  initialState: { user: JSON.parse(localStorage.getItem('user')), isAuthenticated: !!localStorage.getItem('user') },
-  reducers: {
-    login: (state, action) => {
-      state.user = action.payload;
-      state.isAuthenticated = true;
-      localStorage.setItem('user', JSON.stringify(action.payload));
-    },
-    logout: (state) => {
-      state.user = null;
-      state.isAuthenticated = false;
-      localStorage.clear();
-    },
-  },
+// Перехватчик для добавления токена
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
-const timerSlice = createSlice({
-  name: 'timer',
-  initialState: { active: null, elapsed: 0, running: false },
-  reducers: {
-    start: (state, action) => {
-      state.active = action.payload;
-      state.running = true;
-      state.elapsed = 0;
-    },
-    tick: (state) => { if (state.running) state.elapsed++; },
-    stop: (state) => {
-      state.active = null;
-      state.running = false;
-      state.elapsed = 0;
-    },
-  },
-});
+export const register = (data) => api.post('/register', data);
+export const login = (data) => api.post('/login', data);
+export const getProjects = () => api.get('/projects');
+export const createProject = (data) => api.post('/projects', data);
+export const updateProject = (id, data) => api.put(`/projects/${id}`, data);
+export const deleteProject = (id) => api.delete(`/projects/${id}`);
+export const startSession = (data) => api.post('/sessions/start', data);
+export const stopSession = (id) => api.put(`/sessions/${id}/stop`);
+export const getActiveSession = () => api.get('/sessions/active');
+export const getSessions = (params) => api.get('/sessions', { params });
+export const getStats = (params) => api.get('/sessions/stats', { params });
 
-export const { login, logout } = authSlice.actions;
-export const { start, tick, stop } = timerSlice.actions;
-export const store = configureStore({ reducer: { auth: authSlice.reducer, timer: timerSlice.reducer } });
+export default api;

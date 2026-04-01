@@ -10,13 +10,28 @@ app.use(express.json());
 
 mongoose.connect('mongodb+srv://tracker-user:tracker123@cluster0.ojkt6xh.mongodb.net/time-tracker?retryWrites=true&w=majority');
 
-const User = mongoose.model('User', { name: String, email: String, password: String });
-const Project = mongoose.model('Project', { name: String, description: String, userId: String });
-const Session = mongoose.model('Session', {
-  projectId: String, userId: String, startTime: Date, endTime: Date, duration: Number, note: String, isActive: { type: Boolean, default: true }
+const User = mongoose.model('User', {
+  name: String,
+  email: String,
+  password: String,
 });
 
-// Регистрация
+const Project = mongoose.model('Project', {
+  name: String,
+  description: String,
+  userId: String,
+});
+
+const Session = mongoose.model('Session', {
+  projectId: String,
+  userId: String,
+  startTime: Date,
+  endTime: Date,
+  duration: Number,
+  note: String,
+  isActive: { type: Boolean, default: true },
+});
+
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
   const hashed = await bcrypt.hash(password, 10);
@@ -26,7 +41,6 @@ app.post('/api/register', async (req, res) => {
   res.json({ token, user: { id: user._id, name, email } });
 });
 
-// Вход
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -37,26 +51,30 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, user: { id: user._id, name: user.name, email } });
 });
 
-// ВРЕМЕННО: упрощенная авторизация (без проверки токена)
-const fakeAuth = (req, res, next) => {
-  // Временно используем фиксированный userId
-  req.userId = '69ccfaf17346b6659fec74c3'; // ID пользователя evaosokovsk@gmail.com
-  next();
+const auth = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Нет токена' });
+  try {
+    const decoded = jwt.verify(token, 'secret');
+    req.userId = decoded.id;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Неверный токен' });
+  }
 };
 
-// ВСЕ ЗАЩИЩЕННЫЕ РОУТЫ ИСПОЛЬЗУЮТ fakeAuth ВМЕСТО auth
-app.get('/api/projects', fakeAuth, async (req, res) => {
+app.get('/api/projects', auth, async (req, res) => {
   const projects = await Project.find({ userId: req.userId });
   res.json(projects);
 });
 
-app.post('/api/projects', fakeAuth, async (req, res) => {
+app.post('/api/projects', auth, async (req, res) => {
   const project = new Project({ ...req.body, userId: req.userId });
   await project.save();
   res.json(project);
 });
 
-app.put('/api/projects/:id', fakeAuth, async (req, res) => {
+app.put('/api/projects/:id', auth, async (req, res) => {
   const project = await Project.findOneAndUpdate(
     { _id: req.params.id, userId: req.userId },
     req.body,
@@ -65,18 +83,23 @@ app.put('/api/projects/:id', fakeAuth, async (req, res) => {
   res.json(project);
 });
 
-app.delete('/api/projects/:id', fakeAuth, async (req, res) => {
+app.delete('/api/projects/:id', auth, async (req, res) => {
   await Project.findOneAndDelete({ _id: req.params.id, userId: req.userId });
   res.json({ success: true });
 });
 
-app.post('/api/sessions/start', fakeAuth, async (req, res) => {
-  const session = new Session({ ...req.body, userId: req.userId, startTime: new Date(), isActive: true });
+app.post('/api/sessions/start', auth, async (req, res) => {
+  const session = new Session({
+    ...req.body,
+    userId: req.userId,
+    startTime: new Date(),
+    isActive: true
+  });
   await session.save();
   res.json(session);
 });
 
-app.put('/api/sessions/:id/stop', fakeAuth, async (req, res) => {
+app.put('/api/sessions/:id/stop', auth, async (req, res) => {
   const session = await Session.findOne({ _id: req.params.id, userId: req.userId });
   session.endTime = new Date();
   session.duration = Math.round((session.endTime - session.startTime) / 60000);
@@ -85,12 +108,12 @@ app.put('/api/sessions/:id/stop', fakeAuth, async (req, res) => {
   res.json(session);
 });
 
-app.get('/api/sessions/active', fakeAuth, async (req, res) => {
+app.get('/api/sessions/active', auth, async (req, res) => {
   const session = await Session.findOne({ userId: req.userId, isActive: true });
   res.json(session);
 });
 
-app.get('/api/sessions', fakeAuth, async (req, res) => {
+app.get('/api/sessions', auth, async (req, res) => {
   const { projectId, page = 1, limit = 10 } = req.query;
   const query = { userId: req.userId };
   if (projectId) query.projectId = projectId;
@@ -99,17 +122,20 @@ app.get('/api/sessions', fakeAuth, async (req, res) => {
   res.json({ sessions, total, pages: Math.ceil(total / limit) });
 });
 
-app.get('/api/sessions/stats', fakeAuth, async (req, res) => {
+app.get('/api/sessions/stats', auth, async (req, res) => {
   const { projectId, period = 'week' } = req.query;
   let startDate = new Date();
   if (period === 'week') startDate.setDate(startDate.getDate() - 7);
   if (period === 'month') startDate.setMonth(startDate.getMonth() - 1);
+  if (period === 'day') startDate.setHours(0, 0, 0, 0);
   const query = { userId: req.userId, startTime: { $gte: startDate }, isActive: false };
   if (projectId) query.projectId = projectId;
   const sessions = await Session.find(query);
   const total = sessions.reduce((sum, s) => sum + s.duration, 0);
   const byProject = {};
-  sessions.forEach(s => { byProject[s.projectId] = (byProject[s.projectId] || 0) + s.duration; });
+  sessions.forEach(s => {
+    byProject[s.projectId] = (byProject[s.projectId] || 0) + s.duration;
+  });
   res.json({ total, sessionsCount: sessions.length, byProject });
 });
 
