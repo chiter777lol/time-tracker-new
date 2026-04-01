@@ -304,7 +304,6 @@ function App() {
         </div>
       </div>
 
-      {/* Модальное окно редактирования профиля */}
       {isEditingProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', padding: '2rem', borderRadius: '1rem', width: '400px' }}>
@@ -319,7 +318,6 @@ function App() {
         </div>
       )}
 
-      {/* Модальное окно редактирования проекта */}
       {editingProject && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', padding: '2rem', borderRadius: '1rem', width: '400px' }}>
@@ -366,7 +364,7 @@ function App() {
                 {p.description && <p style={{ color: '#64748b', marginTop: '0.5rem' }}>{p.description}</p>}
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                   <button onClick={() => { setEditingProject(p); setEditProjectName(p.name); setEditProjectDesc(p.description || ''); }} style={{ color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem' }}>✏️ Редактировать</button>
-                  <button onClick={() => deleteProject(p._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem' }}>��� Удалить</button>
+                  <button onClick={() => deleteProject(p._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem' }}>🗑 Удалить</button>
                 </div>
               </div>
             ))}
@@ -391,7 +389,7 @@ function App() {
                 {p.description && <p style={{ color: '#64748b', marginTop: '0.5rem' }}>{p.description}</p>}
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', justifyContent: 'flex-end' }}>
                   <button onClick={() => { setEditingProject(p); setEditProjectName(p.name); setEditProjectDesc(p.description || ''); }} style={{ color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer' }}>✏️ Редактировать</button>
-                  <button onClick={() => deleteProject(p._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>��� Удалить</button>
+                  <button onClick={() => deleteProject(p._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>🗑 Удалить</button>
                 </div>
               </div>
             ))}
@@ -459,7 +457,7 @@ function App() {
                   <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
                     {new Date(s.startTime).toLocaleString()} — {s.endTime ? new Date(s.endTime).toLocaleString() : 'в процессе'}
                   </div>
-                  {s.note && <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.25rem' }}>��� {s.note}</div>}
+                  {s.note && <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.25rem' }}>📝 {s.note}</div>}
                 </div>
               ))
             )}
