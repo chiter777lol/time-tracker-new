@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api, * as apiFunctions from './api';
+import * as api from './api';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -28,11 +28,10 @@ function App() {
   const [sessions, setSessions] = useState([]);
   const [statsPeriod, setStatsPeriod] = useState('week');
 
-  // Загрузка данных после входа
   const loadProjects = async () => {
     if (!token) return;
     try {
-      const res = await apiFunctions.getProjects();
+      const res = await api.getProjects();
       setProjects(res.data || []);
     } catch (err) {
       console.error(err);
@@ -42,7 +41,7 @@ function App() {
   const loadActiveSession = async () => {
     if (!token) return;
     try {
-      const res = await apiFunctions.getActiveSession();
+      const res = await api.getActiveSession();
       if (res.data) {
         setActiveSession(res.data);
         setTimerRunning(true);
@@ -58,7 +57,7 @@ function App() {
   const loadStats = async () => {
     if (!token) return;
     try {
-      const res = await apiFunctions.getStats({ period: statsPeriod });
+      const res = await api.getStats({ period: statsPeriod });
       setStats(res.data);
     } catch (err) {
       console.error(err);
@@ -68,7 +67,7 @@ function App() {
   const loadSessions = async () => {
     if (!token) return;
     try {
-      const res = await apiFunctions.getSessions({ limit: 20 });
+      const res = await api.getSessions({ limit: 20 });
       setSessions(res.data?.sessions || []);
     } catch (err) {
       console.error(err);
@@ -87,7 +86,6 @@ function App() {
     }
   }, [token]);
 
-  // Таймер
   useEffect(() => {
     let interval;
     if (timerRunning) {
@@ -117,7 +115,7 @@ function App() {
       return;
     }
     try {
-      const res = await apiFunctions.startSession({ projectId: selectedProject, note: sessionNote });
+      const res = await api.startSession({ projectId: selectedProject, note: sessionNote });
       setActiveSession(res.data);
       setTimerRunning(true);
       setElapsed(0);
@@ -130,7 +128,7 @@ function App() {
   const stopTimer = async () => {
     if (!activeSession) return;
     try {
-      await apiFunctions.stopSession(activeSession._id);
+      await api.stopSession(activeSession._id);
       setActiveSession(null);
       setTimerRunning(false);
       setElapsed(0);
@@ -148,7 +146,7 @@ function App() {
       return;
     }
     try {
-      await apiFunctions.createProject({ name: newProjectName, description: newProjectDesc });
+      await api.createProject({ name: newProjectName, description: newProjectDesc });
       setNewProjectName('');
       setNewProjectDesc('');
       loadProjects();
@@ -160,7 +158,7 @@ function App() {
   const deleteProject = async (id) => {
     if (confirm('Удалить проект?')) {
       try {
-        await apiFunctions.deleteProject(id);
+        await api.deleteProject(id);
         loadProjects();
       } catch (err) {
         alert('Ошибка');
@@ -171,7 +169,7 @@ function App() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await apiFunctions.login({ email: loginEmail, password: loginPassword });
+      const res = await api.login({ email: loginEmail, password: loginPassword });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setToken(res.data.token);
@@ -190,7 +188,7 @@ function App() {
       return;
     }
     try {
-      const res = await apiFunctions.register({ name: regName, email: regEmail, password: regPassword });
+      const res = await api.register({ name: regName, email: regEmail, password: regPassword });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setToken(res.data.token);
@@ -221,7 +219,6 @@ function App() {
     }
   }, [statsPeriod]);
 
-  // Страница входа/регистрации
   if (!token) {
     return (
       <div style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem', background: 'white', borderRadius: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
@@ -255,7 +252,6 @@ function App() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
-      {/* Шапка */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button onClick={() => setView('home')} style={{ background: view === 'home' ? '#4f46e5' : 'white', color: view === 'home' ? 'white' : '#4f46e5', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #4f46e5', cursor: 'pointer' }}>Главная</button>
@@ -268,7 +264,6 @@ function App() {
         </div>
       </div>
 
-      {/* Главная страница */}
       {view === 'home' && (
         <>
           <div style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', borderRadius: '1rem', padding: '2rem', color: 'white', textAlign: 'center', marginBottom: '2rem' }}>
@@ -305,7 +300,6 @@ function App() {
         </>
       )}
 
-      {/* Страница проектов */}
       {view === 'projects' && (
         <>
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', marginBottom: '2rem' }}>
@@ -330,11 +324,9 @@ function App() {
         </>
       )}
 
-      {/* Страница аналитики */}
       {view === 'analytics' && (
         <>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Аналитика</h1>
-          
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
             <select value={statsPeriod} onChange={e => setStatsPeriod(e.target.value)} style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
               <option value="day">День</option>
@@ -347,26 +339,26 @@ function App() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '2rem' }}>
               <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4f46e5' }}>{formatDuration(stats.total)}</div>
-                <div style={{ fontSize: '0.875rem', color: '#64748b' }}>Всего времени</div>
+                <div>Всего времени</div>
               </div>
               <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4f46e5' }}>{stats.sessionsCount}</div>
-                <div style={{ fontSize: '0.875rem', color: '#64748b' }}>Сессий</div>
+                <div>Сессий</div>
               </div>
               <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4f46e5' }}>{Object.keys(stats.byProject || {}).length}</div>
-                <div style={{ fontSize: '0.875rem', color: '#64748b' }}>Проектов</div>
+                <div>Проектов</div>
               </div>
             </div>
           )}
 
           <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', marginBottom: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Статистика по проектам</h3>
+            <h3>Статистика по проектам</h3>
             {stats?.byProject && Object.entries(stats.byProject).map(([id, minutes]) => {
               const project = projects.find(p => p._id === id);
               return (
                 <div key={id} style={{ marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>{project?.name || 'Неизвестно'}</span>
                     <span>{formatDuration(minutes)}</span>
                   </div>
@@ -379,7 +371,7 @@ function App() {
           </div>
 
           <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ marginBottom: '1rem' }}>История сессий</h3>
+            <h3>История сессий</h3>
             {sessions.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#64748b' }}>Нет записей</p>
             ) : (
@@ -392,7 +384,7 @@ function App() {
                   <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
                     {new Date(s.startTime).toLocaleString()} — {s.endTime ? new Date(s.endTime).toLocaleString() : 'в процессе'}
                   </div>
-                  {s.note && <div style={{ fontSize: '0.875rem', color: '#94a3b8', marginTop: '0.25rem' }}>��� {s.note}</div>}
+                  {s.note && <div>��� {s.note}</div>}
                 </div>
               ))
             )}
